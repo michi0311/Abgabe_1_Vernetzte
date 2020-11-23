@@ -11,8 +11,6 @@ public class main {
         MultiThreadedServer server = new MultiThreadedServer(80, "/Users/michaelmarolt/Desktop/Studium/5. Semester/Vernetzte Systeme/Abgabe_1/documentRoot");
 
         server.run();
-
-
     }
 }
 
