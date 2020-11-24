@@ -49,10 +49,6 @@ public class SingleThreadedServer implements Runnable{
 
                 File file = new File(baseDirectory + fileLocation);
 
-                if (file.length() == 0) {
-                    clientSocket.close();
-                }
-
                 FileInputStream fileIn = null;
                 byte[] fileData = new byte[(int) file.length()];
 
@@ -68,10 +64,15 @@ public class SingleThreadedServer implements Runnable{
                 OutputStream outputStream = clientSocket.getOutputStream();
                 outputStream.write(fileData,0,fileData.length);
                 outputStream.flush();
-                clientSocket.close();
 
             } catch (Exception e) {
-
+                System.out.println(e);
+            } finally {
+                try {
+                    clientSocket.close();
+                } catch (Exception e) {
+                    System.out.println("Error closing error Socket" + e);
+                }
             }
         }
     }
