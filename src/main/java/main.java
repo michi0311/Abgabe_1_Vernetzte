@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Date;
 
 /****************************
  * Created by Michael Marolt *
@@ -8,9 +9,55 @@ import java.net.Socket;
 
 public class main {
     public static void main(String[] args) {
-        MultiThreadedServer server = new MultiThreadedServer(80, "/Users/michaelmarolt/Desktop/Studium/5. Semester/Vernetzte Systeme/Abgabe_1/documentRoot");
+        int port;
+        String baseDirectory;
+        boolean isSingle = true;
 
-        server.run();
+
+        if (args.length > 0) {
+            port = 80;
+            baseDirectory = "/Users/michaelmarolt/Desktop/Studium/5. Semester/Vernetzte Systeme/Abgabe_1/documentRoot";
+            for (int i = 0; i < args.length; i++) {
+                if (args[i].equals("-r")) {
+                    baseDirectory = main.class.getProtectionDomain().getCodeSource().getLocation().getPath() + args[i + 1];
+                    System.out.println("Directory: " + baseDirectory);
+                } else if (args[i].equals("-a")) {
+                    baseDirectory = args[i + 1];
+                    System.out.println("Directory: " + baseDirectory);
+                } else if (args[i].equals("-t")) {
+                    isSingle = args[i+1].equals("single");
+                } else if (args[i].equals("-p")) {
+                    port = Integer.parseInt(args[i + 1]);
+                    System.out.println("Port: " + port);
+                } else if (args[i].equals("-h")) {
+                    System.out.println("Usage:  java main -a \"/Users/michaelmarolt/Desktop/Studium/5. Semester/Vernetzte Systeme/Abgabe_1/documentRoot\" -t single -p 80");
+                    System.out.println();
+                    System.out.println("-a: specifies absolute File path");
+                    System.out.println("-r: specifies relative File path");
+                    System.out.println("-p: specifies port Number");
+                    System.out.println("-t: specifies connection Type (multi,single)");
+                    System.out.println("-h: Help");
+                    System.out.println();
+
+                    System.exit(0);
+                }
+            }
+        } else {
+            port = 80;
+            baseDirectory = "/Users/michaelmarolt/Desktop/Studium/5. Semester/Vernetzte Systeme/Abgabe_1/documentRoot";
+        }
+
+
+
+        if (isSingle) {
+            System.out.println("Server Type: Single Threaded");
+            SingleThreadedServer server = new SingleThreadedServer(port, baseDirectory);
+            server.run();
+        } else {
+            System.out.println("Server Type: Multi Threaded");
+            MultiThreadedServer server = new MultiThreadedServer(port, baseDirectory);
+            server.run();
+        }
     }
 }
 
@@ -32,7 +79,7 @@ class SingleThreadedServer implements Runnable {
     public void run() {
         try {
             serverSocket = new ServerSocket(port);
-            System.out.println("Server running on port " + port);
+            System.out.println("Server running on port " + serverSocket.getLocalPort());
         } catch (IOException e) {
             throw new RuntimeException("Can't open port 80", e);
         }
@@ -52,6 +99,8 @@ class SingleThreadedServer implements Runnable {
                 System.out.println(line + clientSocket.getPort());
                 String fileLocation = line.split(" ")[1];
 
+                fileLocation += fileLocation.equals("/") ? defaultFile : "";
+
                 File file = new File(baseDirectory + fileLocation);
 
                 FileInputStream fileIn = null;
@@ -70,8 +119,6 @@ class SingleThreadedServer implements Runnable {
                 outputStream.write(fileData,0,fileData.length);
                 outputStream.flush();
                 clientSocket.close();
-
-                Thread.sleep(1000);
 
             } catch (Exception e) {
 
@@ -136,8 +183,10 @@ class WorkerRunnable implements Runnable {
             InputStream input = clientSocket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
             String line = reader.readLine();
-            System.out.println(line + clientSocket.getPort());
+            System.out.println(new Date().toString() + " " + line + " " + clientSocket.getPort());
             String fileLocation = line.split(" ")[1];
+
+            fileLocation += fileLocation.equals("/") ? defaultFile : "";
 
 
             File file = new File(baseDirectory + fileLocation);
@@ -158,8 +207,6 @@ class WorkerRunnable implements Runnable {
             outputStream.write(fileData,0,fileData.length);
             outputStream.flush();
             clientSocket.close();
-
-            Thread.sleep(1000);
 
         } catch (Exception e) {
 
