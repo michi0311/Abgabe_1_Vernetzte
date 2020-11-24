@@ -1,6 +1,6 @@
 # Abgabe_1_Vernetzte
 
-Usage:  java main -a "/Users/michaelmarolt/Desktop/Studium/5. Semester/Vernetzte Systeme/Abgabe_1/documentRoot" -t single -p 80
+Usage:  java main -a "/Users/michaelmarolt/absoluteFilePath" -t single -p 80
 
 Die Art des Verbindungstyps, der Port und der Ordnerpfad können über Flags gesetzt werden. 
 
