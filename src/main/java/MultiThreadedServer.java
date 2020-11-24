@@ -65,10 +65,14 @@ class WorkerRunnable implements Runnable {
             System.out.println(new Date().toString() + " " + line + " " + clientSocket.getPort());
             String fileLocation = line.split(" ")[1];
 
-            fileLocation += fileLocation.equals("/") ? defaultFile : "";
+            fileLocation += fileLocation.charAt(fileLocation.length()-1)=='/' ? defaultFile : "";
 
 
             File file = new File(baseDirectory + fileLocation);
+
+            if (file.length() == 0) {
+                clientSocket.close();
+            }
 
             FileInputStream fileIn = null;
             byte[] fileData = new byte[(int) file.length()];
