@@ -61,7 +61,7 @@ public class SingleThreadedServer implements Runnable{
                     }
                 }
 
-                OutputStream outputStream = clientSocket.getOutputStream();
+                OutputStream outputStream = clientSocket.getOutputStream(); 
                 outputStream.write(fileData,0,fileData.length);
                 outputStream.flush();
 
