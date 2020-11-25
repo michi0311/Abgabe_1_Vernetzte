@@ -82,6 +82,8 @@ class WorkerRunnable implements Runnable {
                 }
             }
 
+            //TODO Header
+
             OutputStream outputStream = clientSocket.getOutputStream();
             outputStream.write(fileData,0,fileData.length);
             outputStream.flush();
