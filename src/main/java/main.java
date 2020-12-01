@@ -6,7 +6,6 @@ public class main {
     public static void main(String[] args) {
         int port;
         String baseDirectory;
-        boolean isSingle = true;
 
 
         if (args.length > 0) {
@@ -19,8 +18,6 @@ public class main {
                 } else if (args[i].equals("-a")) {
                     baseDirectory = args[i + 1];
                     System.out.println("Directory: " + baseDirectory);
-                } else if (args[i].equals("-t")) {
-                    isSingle = args[i+1].equals("single");
                 } else if (args[i].equals("-p")) {
                     port = Integer.parseInt(args[i + 1]);
                     System.out.println("Port: " + port);
@@ -30,7 +27,6 @@ public class main {
                     System.out.println("-a: specifies absolute File path");
                     System.out.println("-r: specifies relative File path");
                     System.out.println("-p: specifies port Number");
-                    System.out.println("-t: specifies connection Type (multi,single)");
                     System.out.println("-h: Help");
                     System.out.println();
 
@@ -48,15 +44,9 @@ public class main {
         }
 
 
+        System.out.println("Server Type: Multi Threaded");
+        MultiThreadedServer server = new MultiThreadedServer(port, baseDirectory);
+        server.run();
 
-        if (isSingle) {
-            System.out.println("Server Type: Single Threaded");
-            SingleThreadedServer server = new SingleThreadedServer(port, baseDirectory);
-            server.run();
-        } else {
-            System.out.println("Server Type: Multi Threaded");
-            MultiThreadedServer server = new MultiThreadedServer(port, baseDirectory);
-            server.run();
-        }
     }
 }

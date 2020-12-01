@@ -1,7 +1,11 @@
+import StatusPages.StatusHelper;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
 import java.util.Date;
+import java.util.StringTokenizer;
 
 /****************************
  * Created by Michael Marolt *
@@ -49,6 +53,8 @@ class WorkerRunnable implements Runnable {
     private Socket clientSocket;
     private String defaultFile = "index.html";
     private String baseDirectory;
+    private BufferedReader reader;
+    private OutputStream outputStream;
 
     public WorkerRunnable(Socket clientSocket, String baseDirectory) {
         this.clientSocket = clientSocket;
@@ -60,41 +66,67 @@ class WorkerRunnable implements Runnable {
     public void run() {
         try {
             InputStream input = clientSocket.getInputStream();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+            reader = new BufferedReader(new InputStreamReader(input));
             String line = reader.readLine();
-            System.out.println(new Date().toString() + " " + line + " " + clientSocket.getPort());
-            String fileLocation = line.split(" ")[1];
+            StringTokenizer tokenizer = new StringTokenizer(line);
+            String method = tokenizer.nextToken();
+            String uri = tokenizer.nextToken();
+            String version = tokenizer.nextToken();
 
-            fileLocation += fileLocation.charAt(fileLocation.length()-1)=='/' ? defaultFile : "";
+
+            System.out.println(new Date().toString() + " " + method + " " + uri + " " + version + " " + clientSocket.getPort());
 
 
-            File file = new File(baseDirectory + fileLocation);
 
-            FileInputStream fileIn = null;
-            byte[] fileData = new byte[(int) file.length()];
+            switch (method) {
+                case "GET":
+                    uri += uri.charAt(uri.length()-1)=='/' ? defaultFile : "";
 
-            try {
-                fileIn = new FileInputStream(file);
-                fileIn.read(fileData);
-            } finally {
-                if (fileIn != null) {
-                    fileIn.close();
-                }
+                    File file = new File(baseDirectory + uri);
+
+
+                    outputStream = clientSocket.getOutputStream();
+
+                    String responseHeader;
+                    if (file.exists()) {
+                        //TODO Content Type and Content Length
+                        responseHeader = StatusHelper.statusHelper("200");
+                        responseHeader += "\r\n";
+
+
+                    } else {
+                        responseHeader = StatusHelper.statusHelper("404");
+                        responseHeader += "\r\n";
+
+                        file = new File("src/main/java/StatusPages/404.html");
+                        System.out.println(file.getAbsolutePath());
+                    }
+
+                    outputStream.write(responseHeader.getBytes());
+                    Files.copy(file.toPath(), outputStream);
+                    outputStream.flush();
+                break;
+                case "POST":
+
+
+
+
+
+
+                break;
+                default:
+                    System.out.println("Method unknown: " + method);
             }
 
-            //TODO Header
-
-            OutputStream outputStream = clientSocket.getOutputStream();
-            outputStream.write(fileData,0,fileData.length);
-            outputStream.flush();
-
         } catch (Exception e) {
-            //System.out.println(e);
+            e.printStackTrace();
         } finally {
             try {
+                outputStream.close();
+                reader.close();
                 clientSocket.close();
             } catch (Exception e) {
-                //System.out.println(e);
+                System.out.println(e);
             }
         }
     }
