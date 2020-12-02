@@ -7,9 +7,6 @@ import java.nio.file.Files;
 import java.util.Date;
 import java.util.StringTokenizer;
 
-/****************************
- * Created by Michael Marolt *
- *****************************/
 
 public class MultiThreadedServer implements Runnable {
     private int port;
@@ -72,6 +69,15 @@ class WorkerRunnable implements Runnable {
             String method = tokenizer.nextToken();
             String uri = tokenizer.nextToken();
             String version = tokenizer.nextToken();
+
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
 
 
             System.out.println(new Date().toString() + " " + method + " " + uri + " " + version + " " + clientSocket.getPort());

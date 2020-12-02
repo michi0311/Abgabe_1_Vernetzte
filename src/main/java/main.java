@@ -1,7 +1,3 @@
-/****************************
- * Created by Michael Marolt *
- *****************************/
-
 public class main {
     public static void main(String[] args) {
         int port;

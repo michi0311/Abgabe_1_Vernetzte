@@ -1,9 +1,5 @@
 package StatusPages;
 
-/****************************
- * Created by Michael Marolt *
- *****************************/
-
 public class StatusHelper {
     public static String statusHelper(String status) {
         String out;
