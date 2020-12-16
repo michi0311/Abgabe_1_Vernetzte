@@ -6,6 +6,7 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.util.Date;
 import java.util.Properties;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 
@@ -199,28 +200,33 @@ class WorkerRunnable implements Runnable {
                 break;
                 case "POST":
                     outputStream = clientSocket.getOutputStream();
+                    final String[] htmlOut = {"<!DOCTYPE html>\n<html>\n<head>\n<title>Example</title>\n</head>\n<body>\n"};
+                    String htmlEnd = "</body>\n</html>";
 
-                    //code to read the post payload data
-                    StringBuilder payload = new StringBuilder();
-                    while(reader.ready()){
-                        payload.append((char) reader.read());
+
+                    if (parms.size() > 0) {
+                        parms.forEach((key, value) -> {
+                            htmlOut[0] += ("<p> Received form variable with name <b>" + key.toString() + "</b> and value <b>" + value.toString() + "</b>.</p>\n");
+                        });
                     }
-                    System.out.println("Payload data is: "+payload.toString());
 
-                    System.out.println("POST");
+                    if (header.getProperty("content-type").equals("application/x-www-form-urlencoded")) {
+                        StringBuilder payload = new StringBuilder();
+                        while(reader.ready()){
+                            payload.append((char) reader.read());
+                        }
 
+                        String[] payloadArray = payload.toString().split("&");
+                        for (String s: payloadArray) {
+                            String[] query = s.split("=");
+                            htmlOut[0] += ("<p> Received form variable with name <b>" + query[0] + "</b> and value <b>" + query[1] + "</b>.</p>\n");
+                        }
+                    } else if (header.getProperty("content-type").equals("multipart/form-data")) {
 
+                    }
 
                     outputStream.write(("HTTP/1.0 200 OK\r\n" + "\r\n").getBytes());
-                    outputStream.write(("<!DOCTYPE html>\n" +
-                            "<html>\n" +
-                            "    <head>\n" +
-                            "        <title>Example</title>\n" +
-                            "    </head>\n" +
-                            "    <body>\n" +
-                            "        <p>This is an example of a simple HTML page with one paragraph.</p>\n" +
-                            "    </body>\n" +
-                            "</html>").getBytes());
+                    outputStream.write((htmlOut[0] + htmlEnd).getBytes());
                     //Files.copy(file.toPath(), outputStream);
                     outputStream.flush();
 
