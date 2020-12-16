@@ -166,10 +166,6 @@ class WorkerRunnable implements Runnable {
 
             System.out.println(new Date().toString() + " " + method + " " + uri + " " + version + " " + clientSocket.getPort());
 
-            System.out.println(header.toString());
-            System.out.println(pre.toString());
-            System.out.println(parms.toString());
-
 
 
             switch (method) {
@@ -226,7 +222,6 @@ class WorkerRunnable implements Runnable {
                             htmlOut[0] += ("<p> Received form variable with name <b>" + query[0] + "</b> and value <b>" + query[1] + "</b>.</p>\n");
                         }
                     } else if (header.getProperty("content-type").split(";")[0].equals("multipart/form-data")) {
-                        System.out.println("nice");
                         StringBuilder payload = new StringBuilder();
                         while(reader.ready()){
                             payload.append((char) reader.read());
@@ -251,13 +246,21 @@ class WorkerRunnable implements Runnable {
                     htmlOut[0] += htmlEnd;
 
 
+                    String responseContentTypePost = "Content-Type:" + MimeTypes.mimeTypesHelper("html") + "\r\n";
+
+                    SimpleDateFormat datePost = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
+                    datePost.setTimeZone(TimeZone.getTimeZone("GMT"));
+
+
                     outputStream = clientSocket.getOutputStream();
-                    outputStream.write(("HTTP/1.0 200 OK\r\n" + "\r\n").getBytes());
+                    outputStream.write(("HTTP/1.0 200 OK\r\n").getBytes());
+                    outputStream.write(responseContentTypePost.getBytes());
+                    outputStream.write(("Content-Length: " + htmlOut[0].getBytes().length + "\r\n").getBytes());
+                    outputStream.write(("Date: " + datePost.format(new Date()) + "\r\n").getBytes());
+                    outputStream.write("Server: NicerServer/0.1\r\n".getBytes());
+                    outputStream.write("\r\n".getBytes());
                     outputStream.write((htmlOut[0]).getBytes());
                     outputStream.flush();
-
-
-
                     break;
                 default:
                     System.out.println("Method unknown: " + method);
