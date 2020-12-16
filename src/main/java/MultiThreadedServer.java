@@ -1,13 +1,12 @@
-import StatusPages.StatusHelper;
+import Helpers.MimeTypes;
+import Helpers.StatusHelper;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
-import java.util.Date;
-import java.util.Properties;
-import java.util.Set;
-import java.util.StringTokenizer;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 
 //todo content-type
@@ -151,6 +150,8 @@ class WorkerRunnable implements Runnable {
                 }
 
                 pre.put("uri", uri);
+
+                pre.put("version", st.nextToken());
             }
             catch ( IOException ioe )
             {
@@ -161,14 +162,13 @@ class WorkerRunnable implements Runnable {
 
             String method = pre.getProperty("method");
             String uri = pre.getProperty("uri");
+            String version = pre.getProperty("version");
+
+            System.out.println(new Date().toString() + " " + method + " " + uri + " " + version + " " + clientSocket.getPort());
 
             System.out.println(header.toString());
             System.out.println(pre.toString());
             System.out.println(parms.toString());
-
-
-
-
 
 
 
@@ -179,27 +179,31 @@ class WorkerRunnable implements Runnable {
                     File file = new File(baseDirectory + uri);
 
 
-                    outputStream = clientSocket.getOutputStream();
-
                     String responseHeader;
                     if (file.exists()) {
-                        //TODO Content Type and Content Length
                         responseHeader = StatusHelper.statusHelper("200");
-                        responseHeader += "\r\n";
                     } else {
                         responseHeader = StatusHelper.statusHelper("404");
-                        responseHeader += "\r\n";
-
-                        file = new File("src/main/java/StatusPages/404.html");
-                        System.out.println(file.getAbsolutePath());
+                        file = new File("src/main/java/Helpers/404.html");
                     }
 
+                    String responseContentType = "Content-Type:" + MimeTypes.mimeTypesHelper(file.getName().split("\\.")[1]) + "\r\n";
+
+
+                    SimpleDateFormat date = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
+                    date.setTimeZone(TimeZone.getTimeZone("GMT"));
+
+                    outputStream = clientSocket.getOutputStream();
                     outputStream.write(responseHeader.getBytes());
+                    outputStream.write(responseContentType.getBytes());
+                    outputStream.write(("Content-Length: " + file.length() + "\r\n").getBytes());
+                    outputStream.write(("Date: " + date.format(new Date()) + "\r\n").getBytes());
+                    outputStream.write("Server: NicerServer/0.1\r\n".getBytes());
+                    outputStream.write("\r\n".getBytes());
                     Files.copy(file.toPath(), outputStream);
                     outputStream.flush();
                 break;
                 case "POST":
-                    outputStream = clientSocket.getOutputStream();
                     final String[] htmlOut = {"<!DOCTYPE html>\n<html>\n<head>\n<title>Example</title>\n</head>\n<body>\n"};
                     String htmlEnd = "</body>\n</html>";
 
@@ -221,13 +225,35 @@ class WorkerRunnable implements Runnable {
                             String[] query = s.split("=");
                             htmlOut[0] += ("<p> Received form variable with name <b>" + query[0] + "</b> and value <b>" + query[1] + "</b>.</p>\n");
                         }
-                    } else if (header.getProperty("content-type").equals("multipart/form-data")) {
+                    } else if (header.getProperty("content-type").split(";")[0].equals("multipart/form-data")) {
+                        System.out.println("nice");
+                        StringBuilder payload = new StringBuilder();
+                        while(reader.ready()){
+                            payload.append((char) reader.read());
+                        }
+
+                        String boundary = "--" + header.getProperty("content-type").split("boundary")[1].replace("=","");
+
+                        String[] payloadArray = payload.toString().split(boundary);
+                        for (String s: payloadArray) {
+                            if (s.length() > 4) {
+                                //System.out.println(s);
+                                String[] st = s.split("name=\"")[1].split("\"");
+                                String name = st[0];
+                                String val =st[1].replaceAll("\\s+","");
+                                htmlOut[0] += ("<p> Received form variable with name <b>" + name + "</b> and value <b>" + val + "</b>.</p>\n");
+                            }
+                        }
+
 
                     }
 
+                    htmlOut[0] += htmlEnd;
+
+
+                    outputStream = clientSocket.getOutputStream();
                     outputStream.write(("HTTP/1.0 200 OK\r\n" + "\r\n").getBytes());
-                    outputStream.write((htmlOut[0] + htmlEnd).getBytes());
-                    //Files.copy(file.toPath(), outputStream);
+                    outputStream.write((htmlOut[0]).getBytes());
                     outputStream.flush();
 
 
@@ -251,11 +277,7 @@ class WorkerRunnable implements Runnable {
     }
 
 
-    /**
-     * Decodes the percent encoding scheme. <br/>
-     * For example: "an+example%20string" -> "an example string"
-     */
-    private String decodePercent( String str ) throws InterruptedException
+    private String decodePercent( String str )
     {
         try
         {
@@ -281,21 +303,16 @@ class WorkerRunnable implements Runnable {
         }
         catch( Exception e )
         {
-            System.out.println( "BAD REQUEST: Bad percent-encoding." );
             return null;
         }
     }
 
 
-    private void decodeParms( String parms, Properties p )
-            throws InterruptedException
-    {
-        if ( parms == null )
-            return;
+    private void decodeParms( String params, Properties p ) {
+        if ( params == null ) return;
 
-        StringTokenizer st = new StringTokenizer( parms, "&" );
-        while ( st.hasMoreTokens())
-        {
+        StringTokenizer st = new StringTokenizer( params, "&" );
+        while ( st.hasMoreTokens()) {
             String e = st.nextToken();
             int sep = e.indexOf( '=' );
             if ( sep >= 0 )
@@ -303,11 +320,6 @@ class WorkerRunnable implements Runnable {
                         decodePercent( e.substring( sep+1 )));
         }
     }
-
-
-
-
-
 }
 
 

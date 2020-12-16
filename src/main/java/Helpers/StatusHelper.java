@@ -1,4 +1,4 @@
-package StatusPages;
+package Helpers;
 
 public class StatusHelper {
     public static String statusHelper(String status) {
