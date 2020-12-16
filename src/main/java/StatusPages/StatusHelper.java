@@ -5,7 +5,7 @@ public class StatusHelper {
         String out;
         switch (status) {
             case "200":
-                out  = "HTTP/1.0 200 OK";
+                out  = "HTTP/1.0 200 OK\r\n";
                 break;
             case "404":
                 out = "HTTP/1.0 404 Not Found\r\n";

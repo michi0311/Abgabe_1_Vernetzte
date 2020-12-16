@@ -5,8 +5,12 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.util.Date;
+import java.util.Properties;
 import java.util.StringTokenizer;
 
+
+//todo content-type
+//todo content-length
 
 public class MultiThreadedServer implements Runnable {
     private int port;
@@ -64,23 +68,106 @@ class WorkerRunnable implements Runnable {
         try {
             InputStream input = clientSocket.getInputStream();
             reader = new BufferedReader(new InputStreamReader(input));
+            /*
             String line = reader.readLine();
             StringTokenizer tokenizer = new StringTokenizer(line);
             String method = tokenizer.nextToken();
             String uri = tokenizer.nextToken();
             String version = tokenizer.nextToken();
 
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-
-
             System.out.println(new Date().toString() + " " + method + " " + uri + " " + version + " " + clientSocket.getPort());
+/*
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());
+            System.out.println(reader.readLine());*/
+
+            Properties pre = new Properties();
+            Properties parms = new Properties();
+            Properties header = new Properties();
+            Properties files = new Properties();
+
+            try {
+                // Read the request line
+                String inLine = reader.readLine();
+                if (inLine == null) return;
+                StringTokenizer st = new StringTokenizer( inLine );
+                if ( !st.hasMoreTokens())
+                    System.out.println("BAD REQUEST: Syntax error. Usage: GET /example/file.html" );
+
+                String method = st.nextToken();
+                pre.put("method", method);
+
+                if ( !st.hasMoreTokens())
+                    System.out.println( "BAD REQUEST: Missing URI. Usage: GET /example/file.html" );
+
+                String uri = st.nextToken();
+
+                // Decode parameters from the URI
+                int qmi = uri.indexOf( '?' );
+                if ( qmi >= 0 )
+                {
+                    decodeParms( uri.substring( qmi+1 ), parms );
+                    uri = decodePercent( uri.substring( 0, qmi ));
+                }
+                else uri = decodePercent(uri);
+
+                // If there's another token, it's protocol version,
+                // followed by HTTP headers. Ignore version but parse headers.
+                // NOTE: this now forces header names lowercase since they are
+                // case insensitive and vary by client.
+                if ( st.hasMoreTokens())
+                {
+                    String line = reader.readLine();
+                    while ( line != null && line.trim().length() > 0 )
+                    {
+                        int p = line.indexOf( ':' );
+                        if ( p >= 0 )
+                            header.put( line.substring(0,p).trim().toLowerCase(), line.substring(p+1).trim());
+                        line = reader.readLine();
+                    }
+                }
+
+                pre.put("uri", uri);
+            }
+            catch ( IOException ioe )
+            {
+                System.out.println( "SERVER INTERNAL ERROR: IOException: " + ioe.getMessage());
+            }
+
+
+
+            String method = pre.getProperty("method");
+            String uri = pre.getProperty("uri");
+
+            System.out.println(header.toString());
+            System.out.println(pre.toString());
+            System.out.println(parms.toString());
+
+
+
+
 
 
 
@@ -98,8 +185,6 @@ class WorkerRunnable implements Runnable {
                         //TODO Content Type and Content Length
                         responseHeader = StatusHelper.statusHelper("200");
                         responseHeader += "\r\n";
-
-
                     } else {
                         responseHeader = StatusHelper.statusHelper("404");
                         responseHeader += "\r\n";
@@ -113,13 +198,35 @@ class WorkerRunnable implements Runnable {
                     outputStream.flush();
                 break;
                 case "POST":
+                    outputStream = clientSocket.getOutputStream();
+
+                    //code to read the post payload data
+                    StringBuilder payload = new StringBuilder();
+                    while(reader.ready()){
+                        payload.append((char) reader.read());
+                    }
+                    System.out.println("Payload data is: "+payload.toString());
+
+                    System.out.println("POST");
 
 
 
+                    outputStream.write(("HTTP/1.0 200 OK\r\n" + "\r\n").getBytes());
+                    outputStream.write(("<!DOCTYPE html>\n" +
+                            "<html>\n" +
+                            "    <head>\n" +
+                            "        <title>Example</title>\n" +
+                            "    </head>\n" +
+                            "    <body>\n" +
+                            "        <p>This is an example of a simple HTML page with one paragraph.</p>\n" +
+                            "    </body>\n" +
+                            "</html>").getBytes());
+                    //Files.copy(file.toPath(), outputStream);
+                    outputStream.flush();
 
 
 
-                break;
+                    break;
                 default:
                     System.out.println("Method unknown: " + method);
             }
@@ -136,6 +243,65 @@ class WorkerRunnable implements Runnable {
             }
         }
     }
+
+
+    /**
+     * Decodes the percent encoding scheme. <br/>
+     * For example: "an+example%20string" -> "an example string"
+     */
+    private String decodePercent( String str ) throws InterruptedException
+    {
+        try
+        {
+            StringBuffer sb = new StringBuffer();
+            for( int i=0; i<str.length(); i++ )
+            {
+                char c = str.charAt( i );
+                switch ( c )
+                {
+                    case '+':
+                        sb.append( ' ' );
+                        break;
+                    case '%':
+                        sb.append((char)Integer.parseInt( str.substring(i+1,i+3), 16 ));
+                        i += 2;
+                        break;
+                    default:
+                        sb.append( c );
+                        break;
+                }
+            }
+            return sb.toString();
+        }
+        catch( Exception e )
+        {
+            System.out.println( "BAD REQUEST: Bad percent-encoding." );
+            return null;
+        }
+    }
+
+
+    private void decodeParms( String parms, Properties p )
+            throws InterruptedException
+    {
+        if ( parms == null )
+            return;
+
+        StringTokenizer st = new StringTokenizer( parms, "&" );
+        while ( st.hasMoreTokens())
+        {
+            String e = st.nextToken();
+            int sep = e.indexOf( '=' );
+            if ( sep >= 0 )
+                p.put( decodePercent( e.substring( 0, sep )).trim(),
+                        decodePercent( e.substring( sep+1 )));
+        }
+    }
+
+
+
+
+
 }
 
 
