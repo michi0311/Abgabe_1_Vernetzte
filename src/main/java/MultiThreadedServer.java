@@ -68,95 +68,47 @@ class WorkerRunnable implements Runnable {
         try {
             InputStream input = clientSocket.getInputStream();
             reader = new BufferedReader(new InputStreamReader(input));
-            /*
-            String line = reader.readLine();
-            StringTokenizer tokenizer = new StringTokenizer(line);
-            String method = tokenizer.nextToken();
-            String uri = tokenizer.nextToken();
-            String version = tokenizer.nextToken();
-
-            System.out.println(new Date().toString() + " " + method + " " + uri + " " + version + " " + clientSocket.getPort());
-/*
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());
-            System.out.println(reader.readLine());*/
 
             Properties pre = new Properties();
             Properties parms = new Properties();
             Properties header = new Properties();
-            Properties files = new Properties();
 
-            try {
-                // Read the request line
-                String inLine = reader.readLine();
-                if (inLine == null) return;
-                StringTokenizer st = new StringTokenizer( inLine );
-                if ( !st.hasMoreTokens())
-                    System.out.println("BAD REQUEST: Syntax error. Usage: GET /example/file.html" );
 
-                String method = st.nextToken();
-                pre.put("method", method);
+            String inLine = reader.readLine();
+            if (inLine == null) return;
 
-                if ( !st.hasMoreTokens())
-                    System.out.println( "BAD REQUEST: Missing URI. Usage: GET /example/file.html" );
+            StringTokenizer sto = new StringTokenizer( inLine );
 
-                String uri = st.nextToken();
+            String methodH = sto.nextToken();
+            pre.put("method", methodH);
 
-                // Decode parameters from the URI
-                int qmi = uri.indexOf( '?' );
-                if ( qmi >= 0 )
-                {
-                    decodeParms( uri.substring( qmi+1 ), parms );
-                    uri = decodePercent( uri.substring( 0, qmi ));
-                }
-                else uri = decodePercent(uri);
 
-                // If there's another token, it's protocol version,
-                // followed by HTTP headers. Ignore version but parse headers.
-                // NOTE: this now forces header names lowercase since they are
-                // case insensitive and vary by client.
-                if ( st.hasMoreTokens())
-                {
-                    String line = reader.readLine();
-                    while ( line != null && line.trim().length() > 0 )
-                    {
-                        int p = line.indexOf( ':' );
-                        if ( p >= 0 )
-                            header.put( line.substring(0,p).trim().toLowerCase(), line.substring(p+1).trim());
-                        line = reader.readLine();
+            String uriH = sto.nextToken();
+
+
+            int qmi = uriH.indexOf( '?' );
+            if ( qmi >= 0 ) {
+                decodeParms( uriH.substring( qmi+1 ), parms );
+                uriH = decodePercent( uriH.substring( 0, qmi ));
+            } else {
+                uriH = decodePercent(uriH);
+            }
+
+
+            if ( sto.hasMoreTokens()) {
+                String line = reader.readLine();
+                while ( line != null && line.trim().length() > 0 ) {
+                    int p = line.indexOf( ':' );
+                    if ( p >= 0 ) {
+                        header.put(line.substring(0, p).trim().toLowerCase(), line.substring(p + 1).trim());
                     }
+                    line = reader.readLine();
                 }
-
-                pre.put("uri", uri);
-
-                pre.put("version", st.nextToken());
             }
-            catch ( IOException ioe )
-            {
-                System.out.println( "SERVER INTERNAL ERROR: IOException: " + ioe.getMessage());
-            }
+
+            pre.put("uri", uriH);
+            pre.put("version", sto.nextToken());
+
 
 
 
@@ -200,7 +152,7 @@ class WorkerRunnable implements Runnable {
                     outputStream.flush();
                 break;
                 case "POST":
-                    final String[] htmlOut = {"<!DOCTYPE html>\n<html>\n<head>\n<title>Example</title>\n</head>\n<body>\n"};
+                    final String[] htmlOut = {"<!DOCTYPE html>\n<html>\n<head>\n<title>Form Data</title>\n</head>\n<body>\n"};
                     String htmlEnd = "</body>\n</html>";
 
 
