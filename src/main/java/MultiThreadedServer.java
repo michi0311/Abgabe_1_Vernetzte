@@ -139,7 +139,7 @@ class WorkerRunnable implements Runnable {
 
 
                     SimpleDateFormat date = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
-                    date.setTimeZone(TimeZone.getTimeZone("GMT"));
+                    date.setTimeZone(TimeZone.getTimeZone("GMT")); 
 
                     outputStream = clientSocket.getOutputStream();
                     outputStream.write(responseHeader.getBytes());
